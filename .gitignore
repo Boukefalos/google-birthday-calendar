@@ -1,0 +1,5 @@
+/vendor
+/composer.bat
+/composer.lock
+/composer.phar
+/installer
