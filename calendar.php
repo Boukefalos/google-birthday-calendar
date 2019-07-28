@@ -110,7 +110,7 @@ if ($bHasContactsCalendar) {
 
         // Get contact id from event
         $aPreferences = $oGadget->getPreferences();
-        if (!isset($aPreferences['goo.contactsContactId']) ) {
+        if (!isset($aPreferences['goo.contactsContactId'])) { 
             continue;        
         }
         $sContactId = $aPreferences['goo.contactsContactId'];
@@ -128,29 +128,28 @@ if ($bHasContactsCalendar) {
         if (!isset($aContacts[$sContactId])) {
             // Get contact details from contact id
             $sUrl = sprintf('https://www.google.com/m8/feeds/contacts/%s/full/%s?v=3.0', CONTACTS_USER_EMAIL, $sContactId);
-            $oHttpRequest = new Google_Http_Request($sUrl);
-            $oHttpRequest = $oAuth->sign($oHttpRequest);
-            $aResponse = $oClient->getIo()->executeRequest($oHttpRequest);
-            
+            $oHttpClient = $oClient->authorize();
+            $oHttpRequest =  new GuzzleHttp\Psr7\Request('GET', $sUrl);
+            $sResponse = $oHttpClient->send($oHttpRequest)->getBody()->getContents();
+
             // Parse XML to fetch birthday
-            $sXml = str_replace(array('gd:', 'gContact:'), null, $aResponse[0]);    
+            $sXml = str_replace(array('gd:', 'gContact:'), null, $sResponse);    
             $oXml = simplexml_load_string($sXml);
-            $aBirthday = (array) $oXml->birthday->attributes();
-            $sDate = current(current($aBirthday));
+            $sDate = ((array) $oXml->birthday)['@attributes']['when'];
 
             // Save birthday date
             $aContacts[$sContactId][CALENDAR_BIRTHDAY_NAME] = $sDate;
 
             // Iterate all events of contact
-            $aEvents = (array) $oXml->event;
-            while (($oEvent = next($aEvents)) !== false) {
-                $aEvent = (array) $oEvent;
-                $sEvent = current(current($aEvent));
-                $sDate = current(current(next($aEvent)));
-
-                // Save other event date
-                $aContacts[$sContactId][$sEvent] = $sDate;
-            }
+            #$aEvents = (array) $oXml->event;
+            #while (($oEvent = next($aEvents)) !== false) {
+            #    $aEvent = (array) $oEvent;
+            #    $sEvent = current(current($aEvent));
+            #    $sDate = current(current(next($aEvent)));
+            #
+            #    // Save other event date
+            #    $aContacts[$sContactId][$sEvent] = $sDate;
+            #}
         }
 
         // Get date of current event
